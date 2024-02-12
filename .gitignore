@@ -1,0 +1,10 @@
+#.gitignore
+**/*.iml
+**/target/*
+**/.idea
+template.sh
+managment/mergeRequests/branchMergingErrorLog.txt
+managment/mergeRequests/mergeRequestErrorLog.txt
+deployments
+output
+songs.csv
