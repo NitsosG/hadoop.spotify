@@ -1,10 +1,14 @@
-package aueb.fnitsos;
+package aueb.fnitsos.spotify;
 
 import org.apache.hadoop.io.Writable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+/**
+ This composite writable type is created in order to pass the two required arguments(song & danceability)
+ from the map to the reduce function.
+ **/
 public class DancableWritable implements Writable {
     private String song;
     private String danceability;
@@ -43,10 +47,9 @@ public class DancableWritable implements Writable {
 
     @Override
     public String toString() {
-        return "{" +
+        return
                 "song='" + song + '\'' +
-                ", danceability='" + danceability + '\'' +
-                '}';
+                ", danceability='" + danceability;
     }
 }
 

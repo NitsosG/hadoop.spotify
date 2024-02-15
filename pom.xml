@@ -45,7 +45,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>aueb.fnitsos.Driver</mainClass>
+              <mainClass>aueb.fnitsos.spotify.SpotifyDriver</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>
