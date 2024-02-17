@@ -9,9 +9,9 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 
-public class MostDancableSong {
+public class SpotifyMapReduceImpl {
 
-    private static Log log = LogFactory.getLog(MostDancableSong.class);
+    private static Log log = LogFactory.getLog(SpotifyMapReduceImpl.class);
 
     /**
      *  The mapper taxes as an input a key value pair, where the key is of type LongWritable
@@ -20,7 +20,7 @@ public class MostDancableSong {
      *   The mapper produces as an output a key value pair, where the key is a text that combines the country code, year & month
      *   and the value is the composite DancebleWritable class that contains the song and it's danceability
      */
-    public static class CountMapper extends Mapper<LongWritable, Text, Text, DancableWritable> {
+    public static class SpotifyMapper extends Mapper<LongWritable, Text, Text, SpotifyMapperOutputValue> {
         @Override
         public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
             // Skip the first line of the csv because of headers.
@@ -47,22 +47,44 @@ public class MostDancableSong {
             // Get the song
             String song = removeQuotes(words[1]);
             // Write records to context for the reducer to read them
-            context.write(new Text(myKey), new DancableWritable(song, danceability));
+            context.write(new Text(myKey), new SpotifyMapperOutputValue(song, Float.parseFloat(danceability)));
 
         }
     }
 
-    private static String removeQuotes(String str){
-        return str.replaceAll("\"", "");
+
+    public static class SpotifyCombiner extends Reducer<Text, SpotifyMapperOutputValue, Text, SpotifyMapperOutputValue> {
+
+        @Override
+        public void reduce(Text key, Iterable<SpotifyMapperOutputValue> values, Context context) throws IOException, InterruptedException {
+            float maxD = 0.0f;
+            String song = "";
+            float danceabilitySum = 0.0f;
+            int numberOfSongs = 0;
+
+
+            // Loop through the records of the same key (same country, year and month), find the max and the avg danceability
+            for (SpotifyMapperOutputValue value : values) {
+                log.info("Reducer : key "+ key + " | value " + value.toString());
+                float danceability = value.getBatchMaxDanceability();
+                danceabilitySum = danceabilitySum + danceability;
+                numberOfSongs++;
+                if (danceability > maxD) {
+                    maxD = danceability;
+                    song = value.getBatchMostDancaebleSong();
+                }
+            }
+            context.write(key,  new SpotifyMapperOutputValue(song, maxD, danceabilitySum, numberOfSongs));
+        }
     }
 
     /**
      * The reducer takes as a key a concatenated text(String) the year month & country code and as value the composite type of DancebleWritable class.
      * The output is the key (same as the mapper) and the value o concatenated string of the song, the max and the average danceabiity.
      */
-    public static class CountReducer extends Reducer<Text, DancableWritable, Text, Text> {
+    public static class SpotifyReducer extends Reducer<Text, SpotifyMapperOutputValue, Text, Text> {
         @Override
-        public void reduce(Text key, Iterable<DancableWritable> values, Context context) throws IOException, InterruptedException {
+        public void reduce(Text key, Iterable<SpotifyMapperOutputValue> values, Context context) throws IOException, InterruptedException {
             // sum up counts for the key
             float maxD = 0.0f;
             String song = "";
@@ -71,14 +93,14 @@ public class MostDancableSong {
 
 
             // Loop through the records of the same key (same country, year and month), find the max and the avg danceability
-            for (DancableWritable value : values) {
+            for (SpotifyMapperOutputValue value : values) {
                 log.info("Reducer : key "+ key + " | value " + value.toString());
-                float danceability = value.getDanceabilityAsFloat();
-                danceabilitySum = danceabilitySum + danceability;
-                numberOfSongs++;
+                float danceability = value.getBatchMaxDanceability();
+                danceabilitySum = danceabilitySum + value.getBatchDanceabilitySum();
+                numberOfSongs = numberOfSongs + value.getCount();
                 if (danceability > maxD) {
                     maxD = danceability;
-                    song = value.getSong();
+                    song = value.getBatchMostDancaebleSong();
                 }
             }
             // Create the reducer's output text
@@ -86,5 +108,9 @@ public class MostDancableSong {
             // Write the output records in the context (country_year_month, song_maxDanceability_avgDanceability)
             context.write(key,  new Text(finalText));
         }
+    }
+
+    private static String removeQuotes(String str){
+        return str.replaceAll("\"", "");
     }
 }

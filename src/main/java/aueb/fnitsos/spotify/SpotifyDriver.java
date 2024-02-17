@@ -17,7 +17,7 @@ public class SpotifyDriver {
 
     public static  void main(String[] args) throws Exception {
 
-        log.info("######################### STARTING v2 #############################");
+        log.info("######################### STARTING v3 #############################");
         System.setProperty("hadoop.home.dir", "/");
 
         // instantiate a configuration
@@ -34,11 +34,14 @@ public class SpotifyDriver {
         Job job = Job.getInstance(configuration, "Spotify danceablity");
 
         // set job parameters
-        job.setJarByClass(MostDancableSong.class);
-        job.setMapperClass(MostDancableSong.CountMapper.class);
-        job.setReducerClass(MostDancableSong.CountReducer.class);
+        job.setJarByClass(SpotifyMapReduceImpl.class);
+        job.setMapperClass(SpotifyMapReduceImpl.SpotifyMapper.class);
+        job.setCombinerClass(SpotifyMapReduceImpl.SpotifyCombiner.class);
+        job.setReducerClass(SpotifyMapReduceImpl.SpotifyReducer.class);
         job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(DancableWritable.class);
+        //job.setOutputValueClass(SpotifyCombinerOutputValue.class);
+        job.setMapOutputValueClass(SpotifyMapperOutputValue.class);
+//        job.setMapOutputKeyClass(Text.class);
 
         // set io paths
         FileInputFormat.addInputPath(job, new Path("/user/fnitsos/songs/songs.csv"));
